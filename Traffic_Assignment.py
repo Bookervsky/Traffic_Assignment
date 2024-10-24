@@ -1,6 +1,7 @@
 from Construct_Network import read_net, read_OD
 import Frank_Wolfe as FW
 import time
+import pandas as pd
 
 '''
 IMPORTRANTE NOTE:
@@ -70,16 +71,20 @@ def calculate_gap(linkSet,SP_cost):
     return gap
 
 
-def output_results(linkSet):
-    outFile = open('flow.csv','w')
-    header = 'init_node,term_node,flow,volume,cost'
-    outFile.write(header + '\n')
-
+def output(linkSet):
+    rows = []
     for l in linkSet:
         link = linkSet[l]
-        outFile.write(
-            f"{str(link.init_node)},{str(link.term_node)},{str(link.flow)},{str(link.cost)}\n"
-        )
+        rows.append({'init_node':link.init_node,
+                            'term_node':link.term_node,
+                            'flow':link.flow,
+                            'cost':link.cost})
+    flow = pd.DataFrame(rows,columns=['init_node','term_node','flow','cost'])
+    net = pd.read_csv('SiouxFalls/processed_data/SiouxFalls_net.csv')
+    result = net.merge(flow,how='left',on=['init_node','term_node'])
+    result.to_csv('SiouxFalls/Results/UE_result.csv',index=False)
+
+    return result
 
 
 
@@ -90,7 +95,7 @@ def main():
     nodeSet,linkSet = read_net(nodes_file,net_file)
     zoneSet, ODSet = read_OD(OD_file)
     traffic_assignment(nodeSet,linkSet,zoneSet,ODSet,'deterministic',0.001,100)
-    output_results(linkSet)
+    output(linkSet)
     return
 
 if __name__ == '__main__':
